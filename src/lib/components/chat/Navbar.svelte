@@ -12,6 +12,7 @@
 		showArchivedChats,
 		showControls,
 		showSidebar,
+		showMemories,
 		temporaryChatEnabled,
 		user
 	} from '$lib/stores';
@@ -26,6 +27,7 @@
 	import Menu from '$lib/components/layout/Navbar/Menu.svelte';
 	import UserMenu from '$lib/components/layout/Sidebar/UserMenu.svelte';
 	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
+	import BookOpen from '../icons/BookOpen.svelte';
 
 	import PencilSquare from '../icons/PencilSquare.svelte';
 	import Banner from '../common/Banner.svelte';
@@ -211,6 +213,30 @@
 					{/if}
 
 					{#if $user?.role === 'admin' || ($user?.permissions.chat?.controls ?? true)}
+						<Tooltip content={$i18n.t('Memories')}>
+							<button
+								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+								on:click={async () => {
+									if ($showMemories) {
+										await showMemories.set(false);
+										await showControls.set(false);
+									} else {
+										await showMemories.set(true);
+										await showControls.set(true);
+										await showOverview.set(false);
+										await showArtifacts.set(false);
+										await showEmbeds.set(false);
+										await showCallOverlay.set(false);
+									}
+								}}
+								aria-label="Memories"
+							>
+								<div class=" m-auto self-center">
+									<BookOpen className=" size-5" strokeWidth="1.5" />
+								</div>
+							</button>
+						</Tooltip>
+
 						<Tooltip content={$i18n.t('Controls')}>
 							<button
 								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"

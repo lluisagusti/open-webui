@@ -42,7 +42,8 @@
 		functions,
 		selectedFolder,
 		pinnedChats,
-		showEmbeds
+		showEmbeds,
+		showMemories
 	} from '$lib/stores';
 
 	import {
@@ -618,6 +619,7 @@
 				showOverview.set(false);
 				showArtifacts.set(false);
 				showEmbeds.set(false);
+				showMemories.set(false);
 			}
 		});
 
@@ -992,7 +994,9 @@
 		await showControls.set(false);
 		await showCallOverlay.set(false);
 		await showOverview.set(false);
+		await showOverview.set(false);
 		await showArtifacts.set(false);
+		await showMemories.set(false);
 
 		if ($page.url.pathname.includes('/c/')) {
 			window.history.replaceState(history.state, '', `/`);
