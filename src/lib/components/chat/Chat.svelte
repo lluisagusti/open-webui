@@ -1544,6 +1544,8 @@
 				message.id,
 				createMessagesList(history, message.id)
 			);
+
+			history = history;
 		}
 
 		console.log(data);

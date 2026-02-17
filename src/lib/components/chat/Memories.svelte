@@ -29,7 +29,7 @@
 
 		try {
 			const messages = createMessagesList(history, history.currentId);
-			// messages && console.log('messages @ synthesizeMemories >> ', messages);
+			console.log('Memories: synthesizeMemories - messages list:', messages);
 			if (messages.length === 0) {
 				processing = false;
 				loading = false;
@@ -38,6 +38,7 @@
 
 			// Use the model from the last message or default
 			let modelId = messages[messages.length - 1].model;
+			console.log('Memories: synthesizeMemories - modelId:', modelId);
 			if (!modelId && $models.length > 0) {
 				modelId = $models[0].id;
 			}
@@ -165,6 +166,7 @@ Ahora analiza el siguiente historial y devuelve SOLO el JSON:
 		} finally {
 			processing = false;
 			loading = false;
+			console.log('Memories: synthesizeMemories - setTimeout()');
 			// Re-init sortable after DOM update
 			setTimeout(() => initSortable(), 0);
 		}
