@@ -16,6 +16,8 @@ from urllib.parse import urlparse
 import aiohttp
 from aiocache import cached
 import requests
+import asyncio # Ensure asyncio is imported
+
 
 from open_webui.utils.headers import include_user_info_headers
 from open_webui.models.chats import Chats
@@ -139,6 +141,10 @@ async def send_post_request(
             if metadata and metadata.get("chat_id"):
                 headers["X-OpenWebUI-Chat-Id"] = metadata.get("chat_id")
 
+        if stream:
+            pass # We will handle stream in a specific way if needed, but here we just need to ensure the request is valid
+
+
         r = await session.post(
             url,
             data=payload,
@@ -209,6 +215,91 @@ def get_api_key(idx, url, configs):
 ##########################################
 
 router = APIRouter()
+
+# Global storage for the latest context
+# Key: user_id (or some session identifier), Value: dict containing the context
+LATEST_CONTEXT = {}
+
+async def synthesize_context_task(payload: dict, user: UserModel, url: str, key: Optional[str]):
+    """
+    Background task to synthesize the context sent to the LLM.
+    """
+    try:
+        log.info(f"Synthesizing context for user {user.id}")
+        log.debug(f"Payload keys: {payload.keys()}")
+        
+        # Extract system prompt and messages
+        messages = payload.get("messages", [])
+        system_prompt = next((m.get("content") for m in messages if m.get("role") == "system"), "No system prompt found.")
+
+        
+        # Prepare a synthesis request
+        # We use a hardcoded instruction to summarize the context
+        synthesis_prompt = f"""
+        Analyze the following context sent to an LLM. 
+        Summarize the system prompt and the user's latest intent based on the message history.
+        
+        System Prompt:
+        {system_prompt}
+        
+        Messages (Last 3):
+        {json.dumps(messages[-3:], indent=2)}
+        
+        Provide a concise summary of what the AI is being asked to do and the persona it should adopt.
+        """
+        
+        synthesis_payload = {
+            "model": payload.get("model", "llama3"), # Attempt to use the same model or a default
+            "messages": [
+                {"role": "user", "content": synthesis_prompt}
+            ],
+            "stream": False
+        }
+        
+        headers = {
+            "Content-Type": "application/json",
+            **({"Authorization": f"Bearer {key}"} if key else {}),
+        }
+        
+        LATEST_CONTEXT[user.id] = {
+            "payload": payload,
+            "synthesis": "Synthesis pending...",
+            "timestamp": time.time()
+        }
+        
+        # Actual synthesis call
+        try:
+             async with aiohttp.ClientSession() as session:
+                async with session.post(f"{url}/api/chat", json=synthesis_payload, headers=headers) as r:
+                    if r.status == 200:
+                        res = await r.json()
+                        synthesis_content = res.get("message", {}).get("content", "Failed to generate synthesis.")
+                        LATEST_CONTEXT[user.id]["synthesis"] = synthesis_content
+                        log.info(f"Synthesis complete for user {user.id}")
+                    else:
+                         LATEST_CONTEXT[user.id]["synthesis"] = f"Error synthesizing: {r.status}"
+                         log.error(f"Synthesis failed with status {r.status}")
+        except Exception as e:
+            log.error(f"Synthesis request failed: {e}")
+            LATEST_CONTEXT[user.id]["synthesis"] = f"Error synthesizing: {e}"
+
+    except Exception as e:
+        log.error(f"Error in synthesize_context_task: {e}")
+
+    except Exception as e:
+        log.error(f"Error in synthesize_context_task: {e}")
+
+
+@router.get("/api/context")
+async def get_current_context(user=Depends(get_verified_user)):
+    """
+    Retrieve the latest synthesized context for the user.
+    """
+    log.info(f"Retrieving context for user {user.id}")
+    context = LATEST_CONTEXT.get(user.id, {}) 
+    log.info(f"Found context: {context.keys() if context else 'None'}")
+    return context
+
 
 
 @router.head("/")
@@ -1334,6 +1425,16 @@ async def generate_chat_completion(
     if prefix_id:
         payload["model"] = payload["model"].replace(f"{prefix_id}.", "")
 
+    # Launch background synthesis task
+    # We use asyncio.create_task to ensure it runs without blocking the main response
+    # and without needing to modify send_post_request signature
+    asyncio.create_task(synthesize_context_task(
+        payload=payload, 
+        user=user, 
+        url=url, 
+        key=get_api_key(url_idx, url, request.app.state.config.OLLAMA_API_CONFIGS)
+    ))
+    
     return await send_post_request(
         url=f"{url}/api/chat",
         payload=json.dumps(payload),
@@ -1343,6 +1444,7 @@ async def generate_chat_completion(
         user=user,
         metadata=metadata,
     )
+
 
 
 # TODO: we should update this part once Ollama supports other types

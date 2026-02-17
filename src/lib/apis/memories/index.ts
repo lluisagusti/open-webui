@@ -1,6 +1,7 @@
 import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 export const getMemories = async (token: string) => {
+	console.log("getMemories()");
 	let error = null;
 
 	const res = await fetch(`${WEBUI_API_BASE_URL}/memories/`, {
@@ -13,6 +14,7 @@ export const getMemories = async (token: string) => {
 	})
 		.then(async (res) => {
 			if (!res.ok) throw await res.json();
+			console.log(">>>>>>>>>>" + res);
 			return res.json();
 		})
 		.catch((err) => {
@@ -25,6 +27,7 @@ export const getMemories = async (token: string) => {
 		throw error;
 	}
 
+	console.log(">>>>>>>>>" + res);
 	return res;
 };
 
