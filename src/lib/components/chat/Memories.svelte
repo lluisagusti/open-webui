@@ -29,7 +29,6 @@
 
 		try {
 			const messages = createMessagesList(history, history.currentId);
-			console.log('Memories: synthesizeMemories - messages list:', messages);
 			if (messages.length === 0) {
 				processing = false;
 				loading = false;
