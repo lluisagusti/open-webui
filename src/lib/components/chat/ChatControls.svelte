@@ -276,7 +276,7 @@
 					{:else if $showEmbeds}
 						<Embeds overlay={dragged} />
 					{:else if $showMemories}
-						<Memories />
+						<Memories {history} />
 					{:else if $showArtifacts}
 						<Artifacts {history} overlay={dragged} />
 					{:else if $showOverview}
