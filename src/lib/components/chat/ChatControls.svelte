@@ -18,7 +18,6 @@
 	import CallOverlay from './MessageInput/CallOverlay.svelte';
 	import Drawer from '../common/Drawer.svelte';
 	import Artifacts from './Artifacts.svelte';
-	import Artifacts from './Artifacts.svelte';
 	import Embeds from './ChatControls/Embeds.svelte';
 	import Memories from './Memories.svelte';
 
@@ -254,7 +253,8 @@
 		{#if $showControls}
 			<div class="flex max-h-full min-h-full">
 				<div
-					class="w-full {($showOverview || $showArtifacts || $showEmbeds || $showMemories) && !$showCallOverlay
+					class="w-full {($showOverview || $showArtifacts || $showEmbeds || $showMemories) &&
+					!$showCallOverlay
 						? ' '
 						: 'px-4 py-3 bg-white dark:shadow-lg dark:bg-gray-850 '} z-40 pointer-events-auto overflow-y-auto scrollbar-hidden"
 					id="controls-container"
